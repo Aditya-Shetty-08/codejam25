@@ -4,20 +4,29 @@ import { useState } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 
-
-const DEFAULT_GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Adventure', 'Animation'];
-
 interface TagInputProps {
     tags?: string[];
     onTagsChange?: (tags: string[]) => void;
+    options?: string[];
+    placeholder?: string;
+    allowCustom?: boolean;
 }
 
-export function TagInput({ tags = [], onTagsChange }: TagInputProps) {
+export function TagInput({ 
+    tags = [], 
+    onTagsChange, 
+    options = [],
+    placeholder = 'Add custom...',
+    allowCustom = true
+}: TagInputProps) {
     const [input, setInput] = useState('');
 
-    const handleGenreClick = (genre: string) => {
-        if (!tags.includes(genre) && onTagsChange) {
-            onTagsChange([...tags, genre]);
+    const handleOptionClick = (option: string) => {
+        if (!tags.includes(option) && onTagsChange) {
+            onTagsChange([...tags, option]);
+        } else if (tags.includes(option) && onTagsChange) {
+            // Allow deselection by clicking again
+            onTagsChange(tags.filter(t => t !== option));
         }
     };
 
@@ -30,32 +39,36 @@ export function TagInput({ tags = [], onTagsChange }: TagInputProps) {
 
     return (
         <div className="flex flex-col gap-4 w-full">
-            <div className="flex flex-wrap gap-2">
-                {DEFAULT_GENRES.map((genre) => {
-                    const isSelected = tags.includes(genre);
-                    return (
-                        <Button
-                            key={genre}
-                            variant={isSelected ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleGenreClick(genre)}
-                            disabled={isSelected}
-                        >
-                            {genre}
-                        </Button>
-                    );
-                })}
-            </div>
-            <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter' && input.trim()) {
-                        handleAddTag(input.trim());
-                    }
-                }}
-                placeholder="Add custom genre..."
-            />
+            {options.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {options.map((option) => {
+                        const isSelected = tags.includes(option);
+                        return (
+                            <Button
+                                key={option}
+                                type="button"
+                                variant={isSelected ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleOptionClick(option)}
+                            >
+                                {option}
+                            </Button>
+                        );
+                    })}
+                </div>
+            )}
+            {allowCustom && (
+                <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && input.trim()) {
+                            handleAddTag(input.trim());
+                        }
+                    }}
+                    placeholder={placeholder}
+                />
+            )}
         </div>
     );
 }

@@ -4,6 +4,11 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 
+export const userInputSchema = z.object({
+    preferences: z.record(z.string(), z.array(z.string())).describe("A flexible object with preference keys and string array values (e.g., { preferredGenres: ['drama'], preferredEra: ['2000s'] })"),
+    spotifyUrls: z.array(z.string().url()).optional().describe("An optional array of Spotify track URLs (requires special processing)"),
+});
+
 import { Button } from "@/components/ui/button"
 import {
     Form,
@@ -12,7 +17,6 @@ import {
     FormItem,
     FormLabel,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import {
     Select,
     SelectContent,
@@ -26,21 +30,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useState } from "react"
 import { X } from "lucide-react"
 import { TagInput } from "./tagInput"
+import { SongCombobox } from "./song-combobox"
 
 const formSchema = z.object({
     genres: z.array(z.string()).optional(),
-    songs: z.string().optional(),
+    songs: z.array(z.string()).optional(),
     ageRating: z.string().optional(),
     language: z.array(z.string()).optional(),
     era: z.string().optional(),
 })
 
-const LANGUAGES = ['English', 'German', 'French', 'Spanish', 'Bengali', 'Hindi', 'Korean', 'Japanese', 'Chinese', 'Arabic', 'Russian', 'Portuguese', 'Italian'];
+const DEFAULT_GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Adventure', 'Animation'];
+const LANGUAGES = ['English','Bengali', 'Chinese', 'French', 'Hindi', 'Japanese', 'Korean', 'Spanish'];
 
+interface FormCompProps {
+    onFormSubmit?: (formData: z.infer<typeof userInputSchema>) => void;
+}
 
-export function FormComp() {
+export function FormComp({ onFormSubmit }: FormCompProps) {
     const [allInputs, setAllInputs] = useState<string[]>([]);
     const [genreTags, setGenreTags] = useState<string[]>([]);
+    const [songTags, setSongTags] = useState<string[]>([]); // Display values for UI
+    const [songTracks, setSongTracks] = useState<Map<string, string>>(new Map()); // Map displayValue -> spotifyUrl
     const [languageTags, setLanguageTags] = useState<string[]>([]);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -49,19 +60,65 @@ export function FormComp() {
     })
 
     function onSubmit() {
-        // Return the data in the schema structure
-        // ✅ This matches the formSchema format
-        const formData: z.infer<typeof formSchema> = {
-            genres: genreTags.length > 0 ? genreTags : undefined,
-            songs: form.getValues("songs") || undefined,
-            ageRating: form.getValues("ageRating") || undefined,
-            language: languageTags.length > 0 ? languageTags : undefined,
-            era: form.getValues("era") || undefined,
+        // Build preferences object
+        const preferences: Record<string, string[]> = {};
+        
+        if (genreTags.length > 0) {
+            preferences.preferredGenres = genreTags;
+        }
+        
+        if (languageTags.length > 0) {
+            preferences.preferredLanguages = languageTags;
+        }
+        
+        const ageRating = form.getValues("ageRating");
+        if (ageRating) {
+            preferences.preferredAgeRating = [ageRating];
+        }
+        
+        const era = form.getValues("era");
+        if (era) {
+            preferences.preferredEra = [era];
+        }
+        
+        // Extract Spotify URLs from selected songs
+        const spotifyUrls: string[] = [];
+        songTags.forEach(displayValue => {
+            const url = songTracks.get(displayValue);
+            if (url) {
+                spotifyUrls.push(url);
+            }
+        });
+        
+        // Return the data in the userInputSchema format
+        const formData: z.infer<typeof userInputSchema> = {
+            preferences,
+            spotifyUrls: spotifyUrls.length > 0 ? spotifyUrls : undefined,
         };
         
-        console.log("Form submission data (schema format):", formData);
+        console.log("Form submission data (userInputSchema format):", formData);
+        
+        // Call the callback prop if provided
+        if (onFormSubmit) {
+            onFormSubmit(formData);
+        }
+        
         return formData;
     }
+
+    // Prevent Enter key from submitting the form
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+        if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            const tagName = target.tagName.toLowerCase();
+            
+            // Only prevent if it's NOT the submit button
+            // If it's the submit button, let it submit normally
+            if (tagName !== 'BUTTON' || (target as HTMLButtonElement).type !== 'submit') {
+                e.preventDefault();
+            }
+        }
+    };
 
     const addToAllInputs = (value: string) => {
         if (value && !allInputs.includes(value)) {
@@ -70,7 +127,38 @@ export function FormComp() {
     };
 
     const removeFromAllInputs = (value: string) => {
+        // Remove from allInputs
         setAllInputs(allInputs.filter((input) => input !== value));
+        
+        // If it's a genre, deselect it in genreTags
+        if (genreTags.includes(value)) {
+            setGenreTags(genreTags.filter(tag => tag !== value));
+        }
+        
+        // If it's a language, deselect it in languageTags
+        if (languageTags.includes(value)) {
+            setLanguageTags(languageTags.filter(tag => tag !== value));
+        }
+        
+        // If it's a song, remove it from songTags and songTracks
+        if (songTags.includes(value)) {
+            setSongTags(songTags.filter(tag => tag !== value));
+            const newTracks = new Map(songTracks);
+            newTracks.delete(value);
+            setSongTracks(newTracks);
+        }
+        
+        // If it's the current age rating, clear it
+        const currentAgeRating = form.getValues("ageRating");
+        if (currentAgeRating === value) {
+            form.setValue("ageRating", "");
+        }
+        
+        // If it's the current era, clear it
+        const currentEra = form.getValues("era");
+        if (currentEra === value) {
+            form.setValue("era", "");
+        }
     };
 
     const handleGenreTagsChange = (tags: string[]) => {
@@ -85,15 +173,13 @@ export function FormComp() {
         setGenreTags(tags);
     };
 
-    const handleSongBlur = (value: string) => {
-        // Remove old song value if it exists in allInputs
-        const oldValue = form.getValues("songs");
-        if (oldValue && allInputs.includes(oldValue)) {
-            removeFromAllInputs(oldValue);
-        }
-        // Add new song value if not empty
-        if (value && value.trim() && !allInputs.includes(value.trim())) {
-            addToAllInputs(value.trim());
+    const handleSongSelect = (displayValue: string, spotifyUrl: string) => {
+        // Add new song value if not empty and not already in the list
+        if (displayValue && displayValue.trim() && !songTags.includes(displayValue.trim())) {
+            const trimmedValue = displayValue.trim();
+            setSongTags([...songTags, trimmedValue]);
+            setSongTracks(new Map(songTracks).set(trimmedValue, spotifyUrl));
+            addToAllInputs(trimmedValue);
         }
     };
 
@@ -152,7 +238,11 @@ export function FormComp() {
             </Card>
 
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <form 
+                    onSubmit={form.handleSubmit(onSubmit)} 
+                    onKeyDown={handleKeyDown}
+                    className="space-y-8"
+                >
                     <FormField
                         control={form.control}
                         name="genres"
@@ -160,7 +250,13 @@ export function FormComp() {
                             <FormItem>
                                 <FormLabel>Sooo... what are we feeling tonight, moviewise?</FormLabel>
                                 <FormControl>
-                                    <TagInput tags={genreTags} onTagsChange={handleGenreTagsChange} />
+                                    <TagInput 
+                                        tags={genreTags} 
+                                        onTagsChange={handleGenreTagsChange}
+                                        options={DEFAULT_GENRES}
+                                        placeholder="Add custom genre..."
+                                        allowCustom={true}
+                                    />
                                 </FormControl>
                             </FormItem>
                         )}
@@ -169,22 +265,22 @@ export function FormComp() {
                     <FormField
                         control={form.control}
                         name="songs"
-                        render={({ field }) => (
+                        render={() => (
                             <FormItem>
                                 <FormLabel>What songs fit the vibe tonight?</FormLabel>
                                 <FormControl>
-                                    <Input 
-                                        {...field} 
-                                        onBlur={(e) => {
-                                            field.onBlur();
-                                            handleSongBlur(e.target.value);
+                                    <SongCombobox
+                                        value=""
+                                        onChange={() => {
+                                            // No-op: we don't want to store the search query
                                         }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && field.value && field.value.trim()) {
-                                                e.preventDefault();
-                                                handleSongBlur(field.value);
-                                            }
+                                        onSelect={(track) => {
+                                            // Add song to the list when user selects a track from results
+                                            const displayValue = `${track.name} - ${track.artist}`;
+                                            const spotifyUrl = track.external_urls.spotify;
+                                            handleSongSelect(displayValue, spotifyUrl);
                                         }}
+                                        placeholder="Search for songs on Spotify..."
                                     />
                                 </FormControl>
                             </FormItem>
@@ -230,30 +326,13 @@ export function FormComp() {
                             <FormItem>
                                 <FormLabel>Preferred languages</FormLabel>
                                 <FormControl>
-                                    <div className="flex flex-col gap-4 w-full">
-                                        <div className="flex flex-wrap gap-2">
-                                            {LANGUAGES.map((language) => {
-                                                const isSelected = languageTags.includes(language);
-                                                return (
-                                                    <Button
-                                                        key={language}
-                                                        type="button"
-                                                        variant={isSelected ? "default" : "outline"}
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (!isSelected) {
-                                                                handleLanguageTagsChange([...languageTags, language]);
-                                                            } else {
-                                                                handleLanguageTagsChange(languageTags.filter(t => t !== language));
-                                                            }
-                                                        }}
-                                                    >
-                                                        {language}
-                                                    </Button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
+                                    <TagInput 
+                                        tags={languageTags} 
+                                        onTagsChange={handleLanguageTagsChange}
+                                        options={LANGUAGES}
+                                        placeholder="Add custom language..."
+                                        allowCustom={true}
+                                    />
                                 </FormControl>
                             </FormItem>
                         )}
