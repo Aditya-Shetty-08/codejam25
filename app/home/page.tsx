@@ -46,7 +46,7 @@ export default function HomePage() {
                   cursor-pointer
                 "
               >
-                Get started for free
+                Get started
                 <svg 
                   className="w-5 h-5" 
                   fill="none" 
@@ -136,6 +136,17 @@ export default function HomePage() {
           </div>
 
         </div>
+
+        {/* Popular Movies Section */}
+        <section className="mt-24">
+          <div className="text-center mb-12">
+            <h2 className="text-5xl lg:text-6xl font-bold">
+              <span className="text-sky-400">Popular</span>
+              <span className="text-gray-900"> Movies</span>
+            </h2>
+          </div>
+          {/* Add your movie content here */}
+        </section>
       </div>
     </div>
   );
