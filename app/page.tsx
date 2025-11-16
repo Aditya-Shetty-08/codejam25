@@ -1,51 +1,97 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
+"use client";
 
-export default function Home() {
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Lottie from 'lottie-react';
+
+/**
+ * A modern, bright homepage component styled like the reference image.
+ * Features white background, bright colors, and a two-column layout.
+ */
+export default function HomePage() {
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/movie-animation.json')
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch((err) => console.error('Error loading animation:', err));
+  }, []);
+
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
+    <div className="min-h-screen relative">
+      {/* Main Content Area */}
+      <div className="container mx-auto px-6 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Left Section - Text and CTA */}
+          <div className="flex flex-col space-y-6">
+            {/* Two-line Headline */}
+            <div className="space-y-2">
+              <h1 className="text-5xl lg:text-6xl font-bold">
+                <span className="text-white">Flago your</span>
+                <br />
+                <span className="text-white">Movies</span>
+              </h1>
             </div>
-            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
-        </div>
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
+            {/* Description Paragraph */}
+            <p className="text-lg text-white/90 max-w-lg leading-relaxed">
+            Pick the perfect movie in seconds.
+            <br />
+            Set your preferences and let our AI handle the rest - solo or with friends.
+            <br />
+            Watching alone? Tap Get Started. With friends? Use Create Room (top-right).
+            </p>
+
+            {/* Call-to-Action Button */}
+            <div className="pt-4">
+              <Link
+                href="/forms"
+                className="
+                  inline-flex items-center gap-2
+                  px-8 py-4 text-lg font-semibold
+                  bg-sky-400 hover:bg-sky-500
+                  text-white rounded-lg
+                  shadow-lg shadow-sky-400/30
+                  transition-all transform hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2
+                  cursor-pointer
+                "
+              >
+                Get started
+                <svg 
+                  className="w-5 h-5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M9 5l7 7-7 7" 
+                  />
+                </svg>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Section - Visual Element */}
+          <div className="flex items-center justify-center lg:justify-end">
+            <div className="relative w-full max-w-lg h-96">
+              {animationData && (
+                <Lottie 
+                  animationData={animationData}
+                  loop={true}
+                  autoplay={true}
+                  className="w-full h-full"
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
