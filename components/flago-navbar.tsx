@@ -58,7 +58,7 @@ export default function FlagoNavbar() {
               
               {/* Logo Text with hover effect */}
               <div className="flex flex-col">
-                <span className="text-base font-bold text-white leading-tight transition-colors duration-300 group-hover:text-sky-300">
+                <span className="text-base font-bold text-white leading-tight transition-colors duration-300 group-hover:text-black">
                   Flago
                 </span>
               </div>
