@@ -13,14 +13,25 @@ import { CardData } from '@/components/tinder-cards';
 export function movieToCardData(
   movie: Movie,
   index: number = 0,
-  getImageUrl?: (movie: Movie) => string
+  getImageUrl?: (movie: Movie) => string,
+  getExtraInfo?: (movie: Movie) => {
+    production?: string;
+    directors?: string[];
+    description?: string;
+    rating?: number | null;
+  }
 ): CardData {
+  const extra = getExtraInfo ? getExtraInfo(movie) : {};
   return {
     id: movie.id,
     number: index + 1,
     category: movie.genres.join(', '),
     question: movie.title,
     imageUrl: getImageUrl ? getImageUrl(movie) : `https://via.placeholder.com/300x400?text=${encodeURIComponent(movie.title)}`,
+    production: extra.production,
+    directors: extra.directors,
+    description: extra.description,
+    rating: extra.rating,
   };
 }
 
@@ -33,8 +44,14 @@ export function movieToCardData(
  */
 export function moviesToCardData(
   movies: Movie[],
-  getImageUrl?: (movie: Movie) => string
+  getImageUrl?: (movie: Movie) => string,
+  getExtraInfo?: (movie: Movie) => {
+    production?: string;
+    directors?: string[];
+    description?: string;
+    rating?: number | null;
+  }
 ): CardData[] {
-  return movies.map((movie, index) => movieToCardData(movie, index, getImageUrl));
+  return movies.map((movie, index) => movieToCardData(movie, index, getImageUrl, getExtraInfo));
 }
 

@@ -1,9 +1,10 @@
 import { TagInput } from '@/components/tagInput'
+import { TinderCards } from '@/components/tinder-cards'
 
 const Test1Page = () => {
   return (
     <div>
-      <TagInput />
+      <TinderCards />
     </div>
   )
 }

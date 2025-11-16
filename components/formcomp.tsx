@@ -17,6 +17,7 @@ import {
     FormItem,
     FormLabel,
 } from "@/components/ui/form"
+import { FormMessage } from "@/components/ui/form"
 import {
     Select,
     SelectContent,
@@ -60,6 +61,11 @@ export function FormComp({ onFormSubmit }: FormCompProps) {
     })
 
     function onSubmit() {
+        // Require at least one genre
+        if (genreTags.length === 0) {
+            form.setError("genres", { type: "manual", message: "Please select at least one genre" });
+            return;
+        }
         // Build preferences object
         const preferences: Record<string, string[]> = {};
         
@@ -171,6 +177,9 @@ export function FormComp({ onFormSubmit }: FormCompProps) {
         newTags.forEach(tag => addToAllInputs(tag));
         
         setGenreTags(tags);
+        if (tags.length > 0) {
+            form.clearErrors("genres");
+        }
     };
 
     const handleSongSelect = (displayValue: string, spotifyUrl: string) => {
@@ -249,15 +258,18 @@ export function FormComp({ onFormSubmit }: FormCompProps) {
                         render={() => (
                             <FormItem>
                                 <FormLabel>Sooo... what are we feeling tonight, moviewise?</FormLabel>
-                                <FormControl>
-                                    <TagInput 
-                                        tags={genreTags} 
-                                        onTagsChange={handleGenreTagsChange}
-                                        options={DEFAULT_GENRES}
-                                        placeholder="Add custom genre..."
-                                        allowCustom={true}
-                                    />
-                                </FormControl>
+                                <div className="w-full max-w-xl">
+                                    <FormControl>
+                                        <TagInput 
+                                            tags={genreTags} 
+                                            onTagsChange={handleGenreTagsChange}
+                                            options={DEFAULT_GENRES}
+                                            placeholder="Add custom genre..."
+                                            allowCustom={true}
+                                        />
+                                    </FormControl>
+                                </div>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -268,21 +280,23 @@ export function FormComp({ onFormSubmit }: FormCompProps) {
                         render={() => (
                             <FormItem>
                                 <FormLabel>What songs fit the vibe tonight?</FormLabel>
-                                <FormControl>
-                                    <SongCombobox
-                                        value=""
-                                        onChange={() => {
-                                            // No-op: we don't want to store the search query
-                                        }}
-                                        onSelect={(track) => {
-                                            // Add song to the list when user selects a track from results
-                                            const displayValue = `${track.name} - ${track.artist}`;
-                                            const spotifyUrl = track.external_urls.spotify;
-                                            handleSongSelect(displayValue, spotifyUrl);
-                                        }}
-                                        placeholder="Search for songs on Spotify..."
-                                    />
-                                </FormControl>
+                                <div className="w-full max-w-xl">
+                                    <FormControl>
+                                        <SongCombobox
+                                            value=""
+                                            onChange={() => {
+                                                // No-op: we don't want to store the search query
+                                            }}
+                                            onSelect={(track) => {
+                                                // Add song to the list when user selects a track from results
+                                                const displayValue = `${track.name} - ${track.artist}`;
+                                                const spotifyUrl = track.external_urls.spotify;
+                                                handleSongSelect(displayValue, spotifyUrl);
+                                            }}
+                                            placeholder="Search for songs on Spotify..."
+                                        />
+                                    </FormControl>
+                                </div>
                             </FormItem>
                         )}
                     />
@@ -300,11 +314,13 @@ export function FormComp({ onFormSubmit }: FormCompProps) {
                                     }} 
                                     defaultValue={field.value}
                                 >
-                                    <FormControl>
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Choose your preferred age rating" />
-                                        </SelectTrigger>
-                                    </FormControl>
+                                    <div className="w-full max-w-xl">
+                                        <FormControl>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Choose your preferred age rating" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                    </div>
                                     <SelectContent>
                                         <SelectGroup>
                                             <SelectLabel>Age Ratings</SelectLabel>
@@ -325,15 +341,17 @@ export function FormComp({ onFormSubmit }: FormCompProps) {
                         render={() => (
                             <FormItem>
                                 <FormLabel>Preferred languages</FormLabel>
-                                <FormControl>
-                                    <TagInput 
-                                        tags={languageTags} 
-                                        onTagsChange={handleLanguageTagsChange}
-                                        options={LANGUAGES}
-                                        placeholder="Add custom language..."
-                                        allowCustom={true}
-                                    />
-                                </FormControl>
+                                <div className="w-full max-w-xl">
+                                    <FormControl>
+                                        <TagInput 
+                                            tags={languageTags} 
+                                            onTagsChange={handleLanguageTagsChange}
+                                            options={LANGUAGES}
+                                            placeholder="Add custom language..."
+                                            allowCustom={true}
+                                        />
+                                    </FormControl>
+                                </div>
                             </FormItem>
                         )}
                     />
@@ -350,11 +368,13 @@ export function FormComp({ onFormSubmit }: FormCompProps) {
                                     }} 
                                     defaultValue={field.value}
                                 >
-                                    <FormControl>
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Choose an era" />
-                                        </SelectTrigger>
-                                    </FormControl>
+                                    <div className="w-full max-w-xl">
+                                        <FormControl>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Choose an era" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                    </div>
                                     <SelectContent>
                                         <SelectGroup>
                                             <SelectLabel>Era</SelectLabel>

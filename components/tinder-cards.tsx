@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { MovieRating } from "@/lib/elo_rating/movie_rating";
+import Image from "next/image";
 
 export interface CardData {
   id?: string; // Optional ID to track which card was swiped (for ELO system)
@@ -10,6 +11,10 @@ export interface CardData {
   category: string;
   question: string;
   imageUrl: string;
+  production?: string;
+  directors?: string[];
+  description?: string;
+  rating?: number | null;
 }
 
 interface CardStyles {
@@ -31,24 +36,7 @@ export function TinderCards({ cardsData, onSwipe, getRankings }: TinderCardsProp
   const [dragStart, setDragStart] = React.useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [velocity, setVelocity] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isSwiping, setIsSwiping] = React.useState<boolean>(false); // Prevent double swipes
-  
-  // Track previous cardsData length to detect when cards are filtered out
-  const prevCardsLengthRef = React.useRef<number>(cardsData.length);
-  
-  // Reset currentIndex to 0 when cards are filtered out (swiped)
-  React.useEffect(() => {
-    // If cards were removed (filtered), reset index to 0 to show the next card
-    if (cardsData.length < prevCardsLengthRef.current && cardsData.length > 0) {
-      setCurrentIndex(0);
-    }
-    prevCardsLengthRef.current = cardsData.length;
-    
-    // If no cards left, show done popup
-    if (cardsData.length === 0) {
-      setShowDonePopup(true);
-    }
-  }, [cardsData.length]);
+  const [expanded, setExpanded] = React.useState<boolean>(false);
 
   const tinderContainerRef = React.useRef<HTMLDivElement>(null);
   const cardsRef = React.useRef<(HTMLDivElement | null)[]>([]);
@@ -80,14 +68,12 @@ export function TinderCards({ cardsData, onSwipe, getRankings }: TinderCardsProp
   }, [currentIndex, getCardStyles, cardsData.length]);
 
   const updateCards = React.useCallback(() => {
-    // Don't increment index - the card will be filtered out and next card becomes index 0
-    // Just reset drag state
-    setDragOffset({ x: 0, y: 0 });
-    setIsDragging(false);
-    
-    // The useEffect will handle resetting currentIndex when cards are filtered
-    // If no cards left, show done popup
-    if (cardsData.length <= 1) {
+    if (currentIndex < cardsData.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setDragOffset({ x: 0, y: 0 });
+      setIsDragging(false);
+      setExpanded(false);
+    } else {
       setShowDonePopup(true);
     }
   }, [cardsData.length]);
@@ -394,7 +380,7 @@ export function TinderCards({ cardsData, onSwipe, getRankings }: TinderCardsProp
                 cardsRef.current[index] = el;
               }}
               className={cn(
-                "absolute m-auto w-full h-full bg-white rounded-[15px] p-5 shadow-[0_15px_30px_rgba(0,0,0,0.2)] transition-all duration-500",
+                "absolute m-auto w-full h-full rounded-[15px] overflow-hidden shadow-[0_15px_30px_rgba(0,0,0,0.2)] transition-all duration-500",
                 isTopCard && "cursor-grab active:cursor-grabbing"
               )}
               style={{
@@ -408,17 +394,112 @@ export function TinderCards({ cardsData, onSwipe, getRankings }: TinderCardsProp
               onMouseDown={isTopCard ? handleMouseDown : undefined}
               onMouseMove={isTopCard ? handleMouseMove : undefined}
               onMouseUp={isTopCard ? handleMouseUp : undefined}
-            >
-              <header className="font-bold text-xl mb-4 text-black">
-                {card.category} {card.number}
-              </header>
-              <div className="flex flex-col items-center justify-between h-[80%]">
-                <p className="text-center text-lg mb-4 text-black">{card.question}</p>
-                <img
-                  src={card.imageUrl}
-                  alt={card.category}
-                  className="max-w-[200px] max-h-[200px] h-auto shadow-[0_4px_8px_rgba(0,0,0,0.1)] pointer-events-none"
-                />
+              >
+                <div className="relative w-full h-full flex flex-col">
+                  <div className="relative w-full h-[70%] flex items-center justify-center">
+                    <Image
+                      src={card.imageUrl || "/flago_only_logo.png"}
+                      alt={card.question}
+                      fill
+                      unoptimized
+                      className="object-cover pointer-events-none select-none"
+                    />
+                  </div>
+                  <div className="w-full h-[30%] bg-white text-black p-5">
+                  <div className="w-full h-full flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-xl font-bold leading-tight line-clamp-2">
+                        {card.question}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{card.directors?.join(', ')}</div>
+                      <div className="text-base mt-0.5 line-clamp-1">
+                        {card.category}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="More details"
+                      onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+                      className="flex-shrink-0 w-10 h-10 rounded-full bg-black text-white grid place-items-center shadow-[0_6px_16px_rgba(0,0,0,0.25)]"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={cn("w-5 h-5 transition-transform duration-300", expanded ? "rotate-0" : "rotate-180")}
+                        aria-hidden="true"
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {/* Bottom drawer with slide animation (full-card) */}
+                <div
+                  className={cn(
+                    "absolute inset-0 w-full h-full bg-white text-black p-5 pt-4 rounded-t-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.2)] transition-transform duration-300 ease-out overflow-y-auto",
+                    expanded ? "translate-y-0" : "translate-y-full"
+                  )}
+                >
+                  <div className="flex items-start justify-between">
+                    <h3 className="text-lg font-extrabold pr-2">{card.question}</h3>
+                    {typeof card.rating === 'number' && (
+                      <div className="px-1.5 py-0.5 rounded-lg bg-black text-white text-xs font-semibold">
+                        {Math.round(card.rating * 10) / 10}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <div className="text-[10px] text-gray-500">Genre</div>
+                    <div className="text-sm">{card.category}</div>
+                  </div>
+                  {card.production && (
+                    <div className="mt-2">
+                      <div className="text-[10px] text-gray-500">Production</div>
+                      <div className="text-sm">{card.production}</div>
+                    </div>
+                  )}
+                  {Array.isArray(card.directors) && card.directors.length > 0 && (
+                    <div className="mt-2">
+                      <div className="text-[10px] text-gray-500">Direction</div>
+                      <div className="text-sm">{card.directors.join(', ')}</div>
+                    </div>
+                  )}
+                  {card.description && (
+                    <div className="mt-2 pb-10">
+                      <div className="text-[10px] text-gray-500">Description</div>
+                      <div className="text-sm leading-relaxed">
+                        {card.description}
+                      </div>
+                    </div>
+                  )}
+                  <div className="sticky bottom-0 w-full flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setExpanded(false)}
+                      className="mt-2 w-8 h-8 rounded-full bg-black text-white grid place-items-center shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
+                      aria-label="Collapse details"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-4 h-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           );
