@@ -4,7 +4,6 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import FlagoNavbar from "@/components/flago-navbar";
 import ConditionalNavbar from "@/components/conditional-navbar";
-import Footer from "@/components/footer";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -116,12 +115,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="relative z-10 flex flex-col min-h-screen">
+          <div className="relative z-10">
             <ConditionalNavbar />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
+            {children}
           </div>
         </ThemeProvider>
       </body>

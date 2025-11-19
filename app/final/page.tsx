@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
@@ -14,7 +14,7 @@ interface MovieWithPoster {
   rank: number;
 }
 
-export default function FinalPage() {
+function FinalPageContent() {
   const [topMovies, setTopMovies] = useState<MovieWithPoster[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -308,6 +308,18 @@ export default function FinalPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function FinalPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white text-xl">Loading results...</div>
+      </div>
+    }>
+      <FinalPageContent />
+    </Suspense>
   );
 }
 
